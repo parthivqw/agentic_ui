@@ -1,0 +1,35 @@
+# Backend framework
+fastapi
+uvicorn[standard]
+
+# CORS for frontend-backend comms
+starlette
+python-multipart
+
+# Pydantic for data validation
+pydantic
+
+# OpenAI client
+openai
+
+# Env variable loading
+python-dotenv
+
+# Transformers for BERT intent model
+transformers
+torch
+tokenizers
+
+# Data handling & JSON utils
+orjson
+ujson
+
+# (Optional) If you later add DB
+sqlalchemy
+psycopg2-binary
+
+# For vector memory (future)
+chromadb
+
+# Utility libraries
+regex
