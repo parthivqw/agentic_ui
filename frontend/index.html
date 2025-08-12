@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic UI - AI Agent Orchestrator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 50%, #0f0f23 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Animated background particles */
+        .bg-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: linear-gradient(45deg, #00d4ff, #7c3aed);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+        }
+
+        /* Main container */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            padding: 20px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00d4ff, #7c3aed, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #a1a1aa;
+            font-size: 14px;
+        }
+
+        /* Chat container */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Message bubbles */
+        .message {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            animation: messageSlide 0.4s ease-out;
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .avatar.user {
+            background: linear-gradient(135deg, #7c3aed, #ec4899);
+        }
+
+        .avatar.ai {
+            background: linear-gradient(135deg, #00d4ff, #0ea5e9);
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 16px 20px;
+            border-radius: 18px;
+            position: relative;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #7c3aed, #ec4899);
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.ai .message-content {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom-left-radius: 4px;
+        }
+
+        /* Agent detection indicator */
+        .agent-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            margin-bottom: 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .agent-poster {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #000;
+        }
+
+        .agent-sales {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .agent-cluster {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        }
+
+        /* Poster result display */
+        .poster-result {
+            margin-top: 12px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .poster-image {
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+            margin: 0 auto;
+        }
+
+        .poster-fields {
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .field-item {
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .field-label {
+            color: #00d4ff;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        /* Sales result display */
+        .sales-result {
+            margin-top: 12px;
+            padding: 16px;
+            border-radius: 12px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .intent-prediction {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .intent-badge {
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .next-action {
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+        }
+
+        .next-action-label {
+            color: #00d4ff;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        /* Cluster result display */
+        .cluster-result {
+            margin-top: 12px;
+            padding: 16px;
+            border-radius: 12px;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        /* Input area */
+        .input-area {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .input-container {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .input-field {
+            flex: 1;
+            min-height: 44px;
+            max-height: 120px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 22px;
+            color: #ffffff;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            border-color: #00d4ff;
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        .input-field::placeholder {
+            color: #71717a;
+        }
+
+        .send-button {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00d4ff, #0ea5e9);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .send-button:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Loading animation */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 16px 20px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00d4ff;
+            animation: typing 1.4s infinite;
+        }
+
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Scrollbar styling */
+        .messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .message-content {
+                max-width: 85%;
+            }
+            
+            .container {
+                padding: 0 10px;
+            }
+        }
+
+        /* Error handling */
+        .error-message {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+
+        /* Debug info styling */
+        .debug-info {
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 11px;
+            color: #a1a1aa;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-particles"></div>
+    
+    <div class="container">
+        <div class="header">
+            <div class="logo">Agentic UI</div>
+            <div class="subtitle">AI Agent Orchestrator - Poster • Sales • Cluster</div>
+        </div>
+        
+        <div class="chat-container">
+            <div class="messages" id="messages">
+                <div class="message ai">
+                    <div class="avatar ai">AI</div>
+                    <div class="message-content">
+                        <div class="agent-indicator agent-cluster">System Ready</div>
+                        Welcome to Agentic UI! 🚀 I can help you with:
+                        <br><br>
+                        🎨 <strong>Poster Generation</strong> - Create stunning marketing visuals<br>
+                        💼 <strong>Sales Analysis</strong> - Analyze conversations with BERT intent prediction<br>
+                        📊 <strong>Content Clustering</strong> - Break down topics into content clusters<br><br>
+                        What would you like to create today?
+                    </div>
+                </div>
+            </div>
+            
+            <div class="input-area">
+                <div class="input-container">
+                    <textarea 
+                        class="input-field" 
+                        id="messageInput" 
+                        placeholder="Describe what you want to create..."
+                        rows="1"
+                    ></textarea>
+                    <button class="send-button" id="sendButton">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22,2 15,22 11,13 2,9 22,2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        const messagesContainer = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        
+        // Backend API endpoint
+        const API_ENDPOINT = 'http://localhost:8000/generate';
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            createBackgroundParticles();
+            setupEventListeners();
+        });
+
+        // Create animated background particles
+        function createBackgroundParticles() {
+            const particlesContainer = document.querySelector('.bg-particles');
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (3 + Math.random() * 4) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            sendButton.addEventListener('click', handleSend);
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                }
+            });
+            
+            // Auto-resize textarea
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+        }
+
+        // Handle send message
+        async function handleSend() {
+            const message = messageInput.value.trim();
+            if (!message || sendButton.disabled) return;
+            
+            // Add user message
+            addMessage(message, 'user');
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            
+            // Show typing indicator
+            const typingId = showTypingIndicator();
+            
+            // Disable input
+            sendButton.disabled = true;
+            messageInput.disabled = true;
+            
+            try {
+                console.log('🚀 Sending request to:', API_ENDPOINT);
+                console.log('📤 Request payload:', { prompt: message });
+                
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ prompt: message })
+                });
+                
+                console.log('📡 Response status:', response.status);
+                console.log('📡 Response OK:', response.ok);
+                console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Response not OK:', response.status, errorText);
+                    throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+                }
+                
+                // Try to get response as text first, then parse
+                const responseText = await response.text();
+                console.log('📥 Raw response text:', responseText);
+                console.log('📥 Response text length:', responseText.length);
+                console.log('📥 Response text type:', typeof responseText);
+                
+                // Check if response is empty
+                if (!responseText) {
+                    console.error('❌ Empty response received');
+                    throw new Error('Empty response from server');
+                }
+                
+                // Try to parse JSON
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                    console.log('✅ Parsed response data:', data);
+                    console.log('📊 Data keys:', Object.keys(data || {}));
+                    console.log('📊 Data type:', typeof data);
+                } catch (parseError) {
+                    console.error('❌ Failed to parse JSON:', parseError);
+                    console.error('❌ Response text was:', responseText);
+                    throw new Error(`Invalid JSON response: ${responseText.substring(0, 200)}...`);
+                }
+                
+                // Remove typing indicator
+                removeTypingIndicator(typingId);
+                
+                // Check if data is null or undefined
+                if (!data) {
+                    console.error('❌ Response data is null or undefined');
+                    console.log('🐛 Debug info: responseText length =', responseText.length);
+                    
+                    // Add debug message to UI
+                    addMessage(`❌ Backend returned null/empty data. Raw response length: ${responseText.length}`, 'ai');
+                    
+                    // Show debug info
+                    addDebugInfo({
+                        responseText: responseText.substring(0, 500),
+                        responseLength: responseText.length,
+                        responseType: typeof responseText,
+                        parsedData: data
+                    });
+                    return;
+                }
+                
+                // Handle response based on agent type
+                handleAgentResponse(data);
+                
+            } catch (error) {
+                console.error('❌ Fetch Error:', error);
+                console.error('❌ Error name:', error.name);
+                console.error('❌ Error message:', error.message);
+                console.error('❌ Error stack:', error.stack);
+                
+                removeTypingIndicator(typingId);
+                
+                let errorMessage = '❌ Connection error occurred. ';
+                if (error.message.includes('Failed to fetch')) {
+                    errorMessage += 'Make sure your FastAPI server is running on localhost:8000 and CORS is properly configured.';
+                } else if (error.message.includes('NetworkError')) {
+                    errorMessage += 'Network issue - check your internet connection and server status.';
+                } else {
+                    errorMessage += `Details: ${error.message}`;
+                }
+                
+                addMessage(errorMessage, 'ai');
+                
+                // Add detailed debug info
+                addDebugInfo({
+                    errorName: error.name,
+                    errorMessage: error.message,
+                    apiEndpoint: API_ENDPOINT,
+                    timestamp: new Date().toISOString()
+                });
+                
+            } finally {
+                // Re-enable input
+                sendButton.disabled = false;
+                messageInput.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        // Add debug info display
+        function addDebugInfo(debugData) {
+            const debugDiv = document.createElement('div');
+            debugDiv.className = 'debug-info';
+            debugDiv.innerHTML = `
+                <strong>🐛 Debug Information:</strong><br>
+                ${JSON.stringify(debugData, null, 2)}
+            `;
+            
+            const lastMessage = messagesContainer.lastElementChild;
+            if (lastMessage && lastMessage.classList.contains('message')) {
+                const messageContent = lastMessage.querySelector('.message-content');
+                messageContent.appendChild(debugDiv);
+            }
+        }
+
+        // Add message to chat
+        function addMessage(content, sender, agentType = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = `avatar ${sender}`;
+            avatar.textContent = sender === 'user' ? 'U' : 'AI';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            
+            if (agentType) {
+                const indicator = document.createElement('div');
+                indicator.className = `agent-indicator agent-${agentType}`;
+                indicator.textContent = `${agentType.charAt(0).toUpperCase() + agentType.slice(1)} Agent`;
+                contentDiv.appendChild(indicator);
+            }
+            
+            if (typeof content === 'string') {
+                contentDiv.innerHTML += content;
+            } else {
+                contentDiv.appendChild(content);
+            }
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(contentDiv);
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            return messageDiv;
+        }
+
+        // Show typing indicator
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message ai typing-message';
+            typingDiv.innerHTML = `
+                <div class="avatar ai">AI</div>
+                <div class="message-content">
+                    <div class="typing-indicator">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            return typingDiv;
+        }
+
+        // Remove typing indicator
+        function removeTypingIndicator(element) {
+            if (element && element.parentNode) {
+                element.parentNode.removeChild(element);
+            }
+        }
+
+        // Handle different agent responses
+        function handleAgentResponse(data) {
+            console.log('🔍 Processing agent response:', data);
+            console.log('🔍 Data status:', data?.status);
+            console.log('🔍 Data keys:', Object.keys(data || {}));
+            
+            // Safety check
+            if (!data) {
+                console.error('❌ Data is null or undefined in handleAgentResponse');
+                addMessage('❌ Backend returned empty response in handler', 'ai');
+                return;
+            }
+            
+            if (data.status === 'error') {
+                console.log('❌ Error response received:', data.message);
+                addMessage(`❌ ${data.message || 'Unknown error occurred'}`, 'ai');
+                return;
+            }
+
+            // Detect agent type from response structure and route accordingly
+            if ((data.image_base64 || data.image_url) && data.poster_fields) {
+                console.log('🎨 Detected poster response');
+                handlePosterResponse(data);
+            } else if (data.poster_fields && data.status === 'success') {
+                console.log('🎨 Detected poster response (fallback)');
+                handlePosterResponse(data);
+            } else if (data.next_best_action || data.intent) {
+                console.log('💼 Detected sales response'); 
+                handleSalesResponse(data);
+            } else if (data.recommended_app) {
+                console.log('🎯 Detected intent detection response');
+                handleIntentDetection(data);
+            } else if (data.clusters || data.content_analysis) {
+                console.log('📊 Detected cluster response');
+                handleClusterResponse(data);
+            } else {
+                console.log('❓ Generic response detected');
+                console.log('🔍 Full data object:', data);
+                
+                // Generic response - handle any response format
+                const message = data.message || JSON.stringify(data, null, 2);
+                addMessage(message, 'ai');
+                
+                // Show debug info for unexpected response format
+                addDebugInfo({
+                    responseType: 'generic',
+                    dataKeys: Object.keys(data || {}),
+                    dataStructure: data
+                });
+            }
+        }
+
+        // Handle poster agent response - ENHANCED with better error handling
+        function handlePosterResponse(data) {
+            console.log('🎨 Poster response data:', data);
+            
+            const content = document.createElement('div');
+            
+            // Success message
+            const messageText = document.createElement('div');
+            messageText.textContent = data.message || '✅ Poster generated successfully!';
+            content.appendChild(messageText);
+            
+            // Poster result container
+            const posterResult = document.createElement('div');
+            posterResult.className = 'poster-result';
+            
+            // Display generated image with enhanced error handling
+            if (data.image_base64) {
+                console.log('🖼️ Processing base64 image...');
+                
+                const img = document.createElement('img');
+                img.className = 'poster-image';
+                
+                // Your backend returns pure base64, add data URL prefix
+                const imageUrl = data.image_base64.startsWith('data:') ? 
+                    data.image_base64 : 
+                    `data:image/png;base64,${data.image_base64}`;
+                
+                img.src = imageUrl;
+                img.alt = 'Generated Poster';
+                
+                img.onerror = function() {
+                    console.error('❌ Failed to load poster image');
+                    console.error('❌ Image URL length:', imageUrl.length);
+                    console.error('❌ Image URL start:', imageUrl.substring(0, 50));
+                    
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'error-message';
+                    errorDiv.textContent = '❌ Failed to load generated poster image';
+                    posterResult.appendChild(errorDiv);
+                    
+                    // Add debug info
+                    addDebugInfo({
+                        imageError: true,
+                        base64Length: data.image_base64?.length || 0,
+                        imageUrlStart: imageUrl.substring(0, 100)
+                    });
+                };
+                
+                img.onload = function() {
+                    console.log('✅ Poster image loaded successfully');
+                    console.log('📐 Image dimensions:', img.naturalWidth, 'x', img.naturalHeight);
+                };
+                
+                posterResult.appendChild(img);
+                
+            } else if (data.image_url) {
+                console.log('🌐 Processing image URL...');
+                
+                const img = document.createElement('img');
+                img.className = 'poster-image';
+                img.src = data.image_url;
+                img.alt = 'Generated Poster';
+                
+                img.onerror = function() {
+                    console.error('❌ Failed to load poster from URL:', data.image_url);
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'error-message';
+                    errorDiv.textContent = '❌ Failed to load poster from URL';
+                    posterResult.appendChild(errorDiv);
+                };
+                
+                img.onload = function() {
+                    console.log('✅ Poster from URL loaded successfully');
+                };
+                
+                posterResult.appendChild(img);
+                
+            } else {
+                console.error('❌ No image data found in response');
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.textContent = '❌ No image was generated';
+                posterResult.appendChild(errorDiv);
+                
+                addDebugInfo({
+                    imageDataMissing: true,
+                    hasImageBase64: !!data.image_base64,
+                    hasImageUrl: !!data.image_url,
+                    responseKeys: Object.keys(data)
+                });
+            }
+            
+            // Display poster fields from your backend format
+            if (data.poster_fields) {
+                console.log('📋 Processing poster fields...');
+                
+                const fieldsDiv = document.createElement('div');
+                fieldsDiv.className = 'poster-fields';
+                
+                Object.entries(data.poster_fields).forEach(([key, value]) => {
+                    if (value && value.toString().trim()) {
+                        const fieldItem = document.createElement('div');
+                        fieldItem.className = 'field-item';
+                        
+                        // Format field name
+                        const fieldName = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        fieldItem.innerHTML = `<span class="field-label">${fieldName}:</span> ${value}`;
+                        fieldsDiv.appendChild(fieldItem);
+                    }
+                });
+                
+                if (fieldsDiv.children.length > 0) {
+                    posterResult.appendChild(fieldsDiv);
+                } else {
+                    console.warn('⚠️ No valid poster fields to display');
+                }
+            }
+            
+            content.appendChild(posterResult);
+            addMessage(content, 'ai', 'poster');
+        }
+
+        // Handle sales agent response - ENHANCED for new structure
+        function handleSalesResponse(data) {
+            const content = document.createElement('div');
+            
+            // Success message
+            const messageText = document.createElement('div');
+            messageText.textContent = '🧠 Sales conversation analyzed using fine-tuned BERT model';
+            content.appendChild(messageText);
+            
+            const salesResult = document.createElement('div');
+            salesResult.className = 'sales-result';
+            
+            // Display predicted intent
+            if (data.intent) {
+                const intentDiv = document.createElement('div');
+                intentDiv.className = 'intent-prediction';
+                intentDiv.innerHTML = `
+                    <span>Predicted Intent:</span>
+                    <span class="intent-badge">${data.intent}</span>
+                `;
+                salesResult.appendChild(intentDiv);
+            }
+            
+            // Display next best action
+            if (data.next_best_action) {
+                const actionDiv = document.createElement('div');
+                actionDiv.className = 'next-action';
+                actionDiv.innerHTML = `
+                    <div class="next-action-label">Recommended Next Action:</div>
+                    <div>${data.next_best_action}</div>
+                `;
+                salesResult.appendChild(actionDiv);
+            }
+            
+            // Display conversation if available
+            if (data.conversation) {
+                const conversationDiv = document.createElement('div');
+                conversationDiv.style.marginTop = '12px';
+                conversationDiv.innerHTML = `
+                    <strong>Conversation:</strong><br>
+                    <pre style="white-space: pre-wrap; font-size: 12px; margin-top: 8px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px;">${data.conversation}</pre>
+                `;
+                salesResult.appendChild(conversationDiv);
+            }
+            
+            content.appendChild(salesResult);
+            addMessage(content, 'ai', 'sales');
+        }
+
+        // Handle intent detection response
+        function handleIntentDetection(data) {
+            let agentType = 'cluster';
+            if (data.recommended_app && data.recommended_app.includes('Poster')) agentType = 'poster';
+            else if (data.recommended_app && data.recommended_app.includes('Sales')) agentType = 'sales';
+            
+            const message = `
+                🔍 Intent detected: ${data.intent || 'Unknown'}<br>
+                🎯 Recommended app: ${data.recommended_app || 'Unknown'}<br>
+                ${data.message ? `<br>${data.message}` : ''}
+            `;
+            
+            addMessage(message, 'ai', agentType);
+        }
+
+        // Handle cluster agent response
+        function handleClusterResponse(data) {
+            const content = document.createElement('div');
+            
+            const messageText = document.createElement('div');
+            messageText.textContent = '📊 Content cluster analysis completed';
+            content.appendChild(messageText);
+            
+            const clusterResult = document.createElement('div');
+            clusterResult.className = 'cluster-result';
+            
+            if (data.clusters) {
+                clusterResult.innerHTML = `
+                    <strong>Content Clusters:</strong><br>
+                    <pre style="white-space: pre-wrap; font-size: 12px; margin-top: 8px;">${JSON.stringify(data.clusters, null, 2)}</pre>
+                `;
+            } else if (data.content_analysis) {
+                clusterResult.innerHTML = `
+                    <strong>Analysis:</strong><br>
+                    <div style="margin-top: 8px;">${data.content_analysis}</div>
+                `;
+            }
+            
+            content.appendChild(clusterResult);
+            addMessage(content, 'ai', 'cluster');
+        }
+    </script>
+</body>
+</html>
