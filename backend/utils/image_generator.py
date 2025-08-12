@@ -3,7 +3,7 @@ import base64
 import os
 
 # Load API key securely (fallback to hardcoded if needed)
-API_KEY = os.getenv("IMAGEGEN_API_KEY", "ddc-a4f-3085d84aef2847f5a150214d4fe4513d")
+API_KEY = os.getenv("IMAGEGEN_API_KEY")
 
 # Imagen API endpoint
 IMAGEN_API_URL = "https://api.a4f.co/v1/images/generations"
@@ -52,3 +52,4 @@ def generate_poster_image(prompt: str) -> str:
     except requests.RequestException as e:
         print("❌ Error during image generation or download:", str(e))
         raise RuntimeError("Poster image generation failed.") from e
+
